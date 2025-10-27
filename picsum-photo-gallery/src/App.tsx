@@ -1,17 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { /* Link, */ useSearchParams } from 'react-router-dom'
 import './App.css'
 import { FiGrid, FiList, FiAlertCircle } from 'react-icons/fi'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
-
-interface Photo {
-  id: string
-  author: string
-  width: number
-  height: number
-  url: string
-  download_url: string
-}
+import type { Photo } from './types/photos'
+import PhotoCard from './components/PhotoCard'
+import { getPhotosPage } from './services/picsum'
 
 type ViewMode = 'grid' | 'list'
 
@@ -19,14 +13,32 @@ function App() {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const param = new URLSearchParams(window.location.search).get('view')
+    const saved = localStorage.getItem('viewMode') as ViewMode | null
+    return (param === 'list' || param === 'grid') ? (param as ViewMode) : (saved ?? 'grid')
+  })
   const [page, setPage] = useState(1)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const observerTarget = useRef<HTMLDivElement>(null)
   const retryCount = useRef<Map<number, number>>(new Map())
   const maxRetries = 3
-  const navigate = useNavigate()
+  const [, setSearchParams] = useSearchParams()
+
+  useEffect(() => {
+    document.title = 'Picsum Photo Gallery'
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem('viewMode', viewMode)
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      if (viewMode === 'grid') next.delete('view')
+      else next.set('view', viewMode)
+      return next
+    }, { replace: true })
+  }, [viewMode, setSearchParams])
 
   const fetchPhotos = useCallback(async (pageNum: number, attempt = 1) => {
     try {
@@ -36,57 +48,41 @@ function App() {
         setLoadingMore(true)
       }
       setError(null)
-      
-      // Add a small delay for retries to avoid rate limiting
+
       if (attempt > 1) {
         await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
       }
-      
-      const response = await fetch(`https://picsum.photos/v2/list?page=${pageNum}&limit=30`, {
-        mode: 'cors',
-        cache: 'default'
-      })
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      
+
+      const data = await getPhotosPage(pageNum, 30)
+
       if (data.length === 0) {
         setHasMore(false)
       } else {
         setPhotos(prev => pageNum === 1 ? data : [...prev, ...data])
-        retryCount.current.delete(pageNum) // Reset retry count on success
+        retryCount.current.delete(pageNum)
       }
-      
+
       setLoading(false)
       setLoadingMore(false)
     } catch (error) {
       console.error(`Error fetching photos (page ${pageNum}, attempt ${attempt}):`, error)
-      
+
       const currentRetries = retryCount.current.get(pageNum) || 0
-      
-      // Only show error for initial load
+
       if (pageNum === 1) {
         setError(error instanceof Error ? error.message : 'Failed to fetch photos')
         setLoading(false)
         setLoadingMore(false)
       } else {
-        // For subsequent pages, retry or skip
         if (currentRetries < maxRetries) {
           retryCount.current.set(pageNum, currentRetries + 1)
-          console.log(`Retrying page ${pageNum} (attempt ${attempt + 1}/${maxRetries})...`)
-          // Retry after a delay
           setTimeout(() => {
             fetchPhotos(pageNum, attempt + 1)
           }, 2000 * attempt)
         } else {
-          // Skip this page and try the next one
-          console.log(`Skipping page ${pageNum} after ${maxRetries} failed attempts`)
           retryCount.current.delete(pageNum)
           setLoadingMore(false)
-          setPage(prev => prev + 1) // Try next page
+          setPage(prev => prev + 1)
         }
       }
     }
@@ -115,6 +111,7 @@ function App() {
       if (currentTarget) {
         observer.unobserve(currentTarget)
       }
+      observer.disconnect()
     }
   }, [loadingMore, hasMore, loading])
 
@@ -126,12 +123,12 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-gray-50 to-gray-100">
-        <div className="flex flex-col items-center gap-6 p-8">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-100">
+        <div className="flex flex-col items-center gap-6 p-8" role="status" aria-live="polite" aria-busy="true">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
             Picsum Photo Gallery
           </h1>
-          <AiOutlineLoading3Quarters className="animate-spin h-16 w-16 text-blue-500" aria-hidden="true" />
+          <AiOutlineLoading3Quarters className="animate-spin h-16 w-16 text-blue-600" aria-hidden="true" />
           <div className="text-2xl font-semibold text-gray-700">Loading photos...</div>
           <div className="text-sm text-gray-500">Please wait while we fetch amazing images for you</div>
         </div>
@@ -141,12 +138,12 @@ function App() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-gray-50 to-gray-100">
-        <div className="text-center max-w-md p-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-6">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-100" role="alert" aria-live="assertive">
+        <div className="flex flex-col items-center gap-6 p-8 text-center">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">
             Picsum Photo Gallery
           </h1>
-          <div className="bg-white rounded-lg shadow-lg p-8">
+          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
             <FiAlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" aria-hidden="true" />
             <h2 className="text-xl font-semibold text-gray-800 mb-2">Oops! Something went wrong</h2>
             <p className="text-red-600 mb-6">{error}</p>
@@ -158,7 +155,7 @@ function App() {
                 setHasMore(true)
                 fetchPhotos(1)
               }}
-              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium shadow-md hover:shadow-lg"
+              className="px-6 py-3 bg-black text-white rounded-lg hover:bg-blue-600 transition-colors font-medium shadow-md hover:shadow-lg"
             >
               Try Again
             </button>
@@ -209,40 +206,8 @@ function App() {
             ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6'
             : 'flex flex-col gap-4'
         }>
-          {photos.map((photo, index) => (
-            <div 
-              key={`${photo.id}-${index}`}
-              onClick={() => navigate(`/photo/${photo.id}`)}
-              className={
-                viewMode === 'grid'
-                  ? 'bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer'
-                  : 'bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col sm:flex-row cursor-pointer'
-              }
-            >
-              <img
-                src={`https://picsum.photos/id/${photo.id}/300/200`}
-                alt={`Photo by ${photo.author}`}
-                className={
-                  viewMode === 'grid'
-                    ? 'w-full h-48 object-cover'
-                    : 'w-full sm:w-64 h-48 sm:h-40 object-cover shrink-0'
-                }
-                loading="lazy"
-              />
-              <div className={viewMode === 'grid' ? 'p-4' : 'p-4 flex flex-col justify-cente grow'}>
-                <p className="text-sm text-gray-500 uppercase tracking-wide mb-1">
-                  Photographer
-                </p>
-                <p className="text-gray-800 font-semibold text-lg">
-                  {photo.author}
-                </p>
-                {viewMode === 'list' && (
-                  <p className="text-gray-500 text-sm mt-2">
-                    {photo.width} x {photo.height}
-                  </p>
-                )}
-              </div>
-            </div>
+          {photos.map((photo) => (
+            <PhotoCard key={photo.id} photo={photo} viewMode={viewMode} />
           ))}
         </div>
 

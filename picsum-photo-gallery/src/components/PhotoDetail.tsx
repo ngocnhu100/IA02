@@ -1,55 +1,54 @@
-import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useEffect, useState, useCallback } from 'react'
+import { useParams, Link } from 'react-router-dom'
 import { FiDownload, FiArrowLeft, FiUser, FiMaximize, FiExternalLink, FiAlertCircle } from 'react-icons/fi'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
-
-interface PhotoDetail {
-  id: string
-  author: string
-  width: number
-  height: number
-  url: string
-  download_url: string
-}
+import type { Photo } from '../types/photos'
+import { getPhotoInfo } from '../services/picsum'
 
 function PhotoDetail() {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
-  const [photo, setPhoto] = useState<PhotoDetail | null>(null)
+  const [photo, setPhoto] = useState<Photo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [imgLoaded, setImgLoaded] = useState(false) // smooth image load
+  const [imgLoaded, setImgLoaded] = useState(false)
 
-  useEffect(() => {
-    const fetchPhotoDetail = async () => {
-      try {
-        setLoading(true)
-        const response = await fetch(`https://picsum.photos/id/${id}/info`)
-        
-        if (!response.ok) {
-          throw new Error('Photo not found')
-        }
-        
-        const data = await response.json()
-        setPhoto(data)
-        setLoading(false)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load photo')
-        setLoading(false)
-      }
-    }
-
-    if (id) {
-      fetchPhotoDetail()
+  const fetchPhotoDetail = useCallback(async (signal?: AbortSignal) => {
+    try {
+      setLoading(true)
+      setError(null)
+      setImgLoaded(false)
+      if (!id) throw new Error('Invalid photo id')
+      const data = await getPhotoInfo(id, signal)
+      setPhoto(data)
+    } catch (err: unknown) {
+      // AbortController throws a DOMException with name 'AbortError' when aborted
+      if (err instanceof DOMException && err.name === 'AbortError') return
+      setError(err instanceof Error ? err.message : 'Failed to load photo')
+    } finally {
+      setLoading(false)
     }
   }, [id])
 
+  useEffect(() => {
+    if (!id) return
+    const controller = new AbortController()
+    fetchPhotoDetail(controller.signal)
+    return () => controller.abort()
+  }, [id, fetchPhotoDetail])
+
+  useEffect(() => {
+    if (photo) {
+      document.title = `Photo by ${photo.author} – Picsum`
+    }
+    return () => { document.title = 'Picsum Photo Gallery' }
+  }, [photo])
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="flex flex-col items-center gap-4">
-          <AiOutlineLoading3Quarters className="animate-spin h-12 w-12 text-blue-500" aria-hidden="true" />
-          <p className="text-gray-600 text-lg">Loading photo details...</p>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-100">
+        <div className="flex flex-col items-center gap-4" role="status" aria-live="polite" aria-busy="true">
+          <AiOutlineLoading3Quarters className="animate-spin h-12 w-12 text-blue-600" aria-hidden="true" />
+          <p className="text-gray-700 text-lg">Loading photo details...</p>
         </div>
       </div>
     )
@@ -57,18 +56,26 @@ function PhotoDetail() {
 
   if (error || !photo) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-100" role="alert" aria-live="assertive">
         <div className="text-center max-w-md p-8">
           <div className="bg-white rounded-lg shadow-lg p-8">
             <FiAlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" aria-hidden="true" />
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">Error</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">Oops! Something went wrong</h2>
             <p className="text-red-600 mb-6">{error || 'Photo not found'}</p>
-            <button
-              onClick={() => navigate('/')}
-              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
-            >
-              Back to Gallery
-            </button>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => { void fetchPhotoDetail(); }}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-700"
+              >
+                Try Again
+              </button>
+              <Link
+                to="/photos"
+                className="px-6 py-3 bg-white text-gray-900 visited:text-gray-900 active:text-gray-900 no-underline border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-600"
+              >
+                <span>Back to Gallery</span>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -79,13 +86,13 @@ function PhotoDetail() {
     <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Back Button */}
-        <button
-          onClick={() => navigate('/')}
-          className="mb-6 inline-flex items-center gap-2 rounded-full bg-gray-800 px-3 py-1.5 text-sm text-white shadow hover:bg-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-800 transition-colors"
+        <Link
+          to="/photos"
+          className="mb-6 inline-flex items-center gap-2 rounded-lg px-4 py-2 sm:px-5 sm:py-2.5 bg-blue-700 text-white visited:text-white active:text-white no-underline text-sm shadow hover:bg-blue-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-700 transition-colors"
         >
-          <FiArrowLeft className="w-4 h-4" aria-hidden="true" />
-          Back to Gallery
-        </button>
+          <FiArrowLeft className="w-4 h-4 text-white" aria-hidden="true" />
+          <span className="text-white">Back to Gallery</span>
+        </Link>
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-2xl ring-1 ring-gray-200 overflow-hidden">
@@ -96,6 +103,12 @@ function PhotoDetail() {
             )}
             <img
               src={`https://picsum.photos/id/${photo.id}/1200/800`}
+              srcSet={`
+                https://picsum.photos/id/${photo.id}/600/400 600w,
+                https://picsum.photos/id/${photo.id}/900/600 900w,
+                https://picsum.photos/id/${photo.id}/1200/800 1200w
+              `}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 1200px"
               alt={`Photo by ${photo.author}`}
               onLoad={() => setImgLoaded(true)}
               className={`w-full max-h-[70vh] object-contain transition-opacity duration-700 ease-out ${imgLoaded ? 'opacity-100' : 'opacity-0'} `}
@@ -153,10 +166,10 @@ function PhotoDetail() {
                 href={photo.download_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-5 py-2.5 text-white font-semibold shadow-lg hover:bg-black transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-900"
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-700 text-white visited:text-white active:text-white no-underline px-5 py-2.5 font-semibold shadow-lg hover:bg-blue-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-700"
               >
-                <FiDownload className="w-5 h-5" aria-hidden="true" />
-                Download Original
+                <FiDownload className="w-5 h-5 text-white" aria-hidden="true" />
+                <span className="text-white">Download Original</span>
               </a>
               <a
                 href={photo.url}
