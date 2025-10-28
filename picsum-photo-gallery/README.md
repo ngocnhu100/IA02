@@ -1,73 +1,81 @@
-# React + TypeScript + Vite
+# 🖼️ React Picsum Photo Gallery
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A responsive React app that displays photos from the **Lorem Picsum API**, featuring infinite scrolling and a detailed photo view.
+Built to demonstrate API integration, routing, and responsive UI design.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🌐 Access Links
 
-## React Compiler
+| Resource              | URL                                                                                  |
+| --------------------- | ------------------------------------------------------------------------------------ |
+| **Live Demo**         | [https://picsum-photo-gallery.netlify.app](https://picsum-photo-gallery.netlify.app) |
+| **GitHub Repository** | [https://github.com/ngocnhu100/IA02](https://github.com/ngocnhu100/IA02)             |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## ⚙️ Run Locally
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+```bash
+# Clone the repository
+git clone https://github.com/ngocnhu100/IA02.git
+cd IA02/picsum-photo-gallery
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# Install dependencies
+npm install
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Run the app
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Then open **[http://localhost:5173](http://localhost:5173)** in your browser.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🧩 Features
+
+### 🖼️ Core Features
+
+- Fetches and displays photo data from the **Lorem Picsum API**
+- Responsive **grid or list** layout for browsing photos
+- **Infinite scrolling** to automatically load more images as you scroll
+- Click any photo to open a **detailed view** with author and full-size image
+- Smooth **loading indicators** and **error handling** for better UX
+
+### 🧭 Navigation & Routing
+
+- Built with **React Router DOM**
+- Routes:
+
+  - `/photos` → Photo gallery view
+  - `/photos/:id` → Detailed photo view
+
+- Configured for **Netlify SPA routing** (`_redirects` file included)
+
+### 🔍 Enhanced Interaction Features
+
+- **Zoom Controls**
+
+  - Supports **pinch-to-zoom** on touch devices
+  - **+ / – buttons** for manual zoom on desktop
+  - Smooth zoom transitions with reset option
+
+- **Image Click to Enlarge**
+
+  - Clicking the photo in the detail view toggles an **enlarged (lightbox-style)** display
+  - Useful for examining full-resolution images without leaving the app
+
+- **Layout Switcher**
+
+  - Toggle between **Grid View** and **List View** dynamically
+  - Layout preference retained while browsing
+
+- **External Links (Detail Page)**
+
+  - **"Go to Unsplash"** → Opens the image’s source page
+  - **"Download Original"** → Opens the high-resolution image in a new tab
+
+### 🎨 Styling & Responsiveness
+
+- Designed with **Tailwind CSS** for a clean and adaptive interface
+- Fully responsive layout for both desktop and mobile
