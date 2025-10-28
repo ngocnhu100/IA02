@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { /* Link, */ useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import './App.css'
 import { FiGrid, FiList, FiAlertCircle } from 'react-icons/fi'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
@@ -115,11 +115,12 @@ function App() {
     }
   }, [loadingMore, hasMore, loading])
 
+  // Fetch when page changes (do not depend on/loadingMore or gate on it)
   useEffect(() => {
-    if (page > 1 && !loadingMore) {
+    if (page > 1) {
       fetchPhotos(page)
     }
-  }, [page, fetchPhotos, loadingMore])
+  }, [page, fetchPhotos])
 
   if (loading) {
     return (
