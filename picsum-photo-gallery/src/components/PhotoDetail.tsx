@@ -34,6 +34,8 @@ function PhotoDetail() {
     lastTouch?: { x: number; y: number }
     lastTapTs?: number
   }>({ startScale: 1, startOffset: { x: 0, y: 0 }, startDist: 0, startCenter: { x: 0, y: 0 } })
+  // Track if a pan occurred to prevent overlay click-close after dragging
+  const didPanRef = useRef(false)
 
   // Fetch photo details; supports AbortSignal to cancel on navigation
   const fetchPhotoDetail = useCallback(async (signal?: AbortSignal) => {
@@ -107,6 +109,7 @@ function PhotoDetail() {
 
   // Touch gestures: pinch to zoom, drag to pan, double-tap to toggle zoom
   const onTouchStart = useCallback((e: React.TouchEvent) => {
+    didPanRef.current = false
     if (e.touches.length === 2) {
       const [a, b] = [e.touches[0], e.touches[1]]
       const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
@@ -124,6 +127,7 @@ function PhotoDetail() {
   const onTouchMove = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       e.preventDefault()
+      didPanRef.current = true
       const [a, b] = [e.touches[0], e.touches[1]]
       const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
       const center = { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 }
@@ -140,8 +144,11 @@ function PhotoDetail() {
       const t = e.touches[0]
       const last = pinchRef.current.lastTouch
       if (last) {
-        const nx = offset.x + (t.clientX - last.x)
-        const ny = offset.y + (t.clientY - last.y)
+        const dx = t.clientX - last.x
+        const dy = t.clientY - last.y
+        if (Math.abs(dx) + Math.abs(dy) > 2) didPanRef.current = true
+        const nx = offset.x + dx
+        const ny = offset.y + dy
         const c = clampOffset(nx, ny, zoom)
         setOffset(c)
       }
@@ -319,12 +326,19 @@ function PhotoDetail() {
       {isFullscreen && (
         <div
           ref={containerRef}
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 overscroll-y-contain"
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 overscroll-y-contain touch-none"
           role="dialog"
           aria-modal="true"
           aria-label="Full-size image viewer"
           title="Pinch to zoom, drag to pan. Double-tap to toggle zoom. Click anywhere or press Esc to close"
-          onClick={(e) => { if (e.target === e.currentTarget) setIsFullscreen(false) }}
+          // Prevent accidental close if a pan occurred; otherwise close on backdrop click
+          onClick={(e) => {
+            if (didPanRef.current) { didPanRef.current = false; return }
+            if (e.target === e.currentTarget) setIsFullscreen(false)
+          }}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
         >
           <button
             aria-label="Close full-size image"
@@ -340,12 +354,13 @@ function PhotoDetail() {
             src={photo.download_url}
             alt={`Full-size photo by ${photo.author}`}
             decoding="async"
-            className="max-w-none max-h-[90vh] shadow-2xl select-none touch-none"
+            className="max-w-none max-h-[90vh] shadow-2xl select-none"
             style={{
               transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${zoom})`,
               transition: 'transform 0.02s linear',
               willChange: 'transform',
             }}
+            draggable={false}
             onClick={(e) => e.stopPropagation()}
             onDoubleClick={(e) => {
               e.preventDefault()
@@ -353,9 +368,6 @@ function PhotoDetail() {
               setZoom(next)
               setOffset({ x: 0, y: 0 })
             }}
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
           />
 
           {/* Toolbar */}
