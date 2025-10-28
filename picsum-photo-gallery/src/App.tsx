@@ -127,7 +127,7 @@ function App() {
   if (loading) {
     return (
       <LoadingOverlay>
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">
+        <h1 className="text-center text-4xl font-bold text-gray-800 mb-2">
           Picsum Photo Gallery
         </h1>
         <div className="text-2xl font-semibold text-gray-700">Loading photos...</div>
