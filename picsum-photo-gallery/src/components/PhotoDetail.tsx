@@ -328,7 +328,12 @@ function PhotoDetail() {
         >
           <button
             aria-label="Close full-size image"
-            className="absolute top-4 right-4 inline-flex items-center justify-center rounded-md bg-white/10 hover:bg-white/20 text-white p-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white"
+            className="absolute top-4 right-4 inline-flex items-center justify-center rounded-md bg-white/10 hover:bg-white/20 text-white p-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white z-50"
+            style={{
+              // Keep a minimum offset and honor device safe area to avoid being cut off
+              top: 'max(1rem, env(safe-area-inset-top))',
+              right: 'max(1rem, env(safe-area-inset-right))',
+            }}
             onClick={() => setIsFullscreen(false)}
           >
             <FiX className="w-5 h-5" />
@@ -393,7 +398,7 @@ function PhotoDetail() {
           </div>
 
           {/* Close hint */}
-          <div className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 text-white/80 text-xs sm:text-sm">
+          <div className="text-center pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 text-white/80 text-xs sm:text-sm">
             Pinch to zoom. Tap outside or press Esc to close
           </div>
         </div>
