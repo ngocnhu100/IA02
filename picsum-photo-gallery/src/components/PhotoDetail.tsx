@@ -15,9 +15,12 @@ function PhotoDetail() {
   const [imgLoaded, setImgLoaded] = useState(false)
 
   // Zoom bounds and step
-  const MIN_ZOOM = 0.5
+  const MIN_ZOOM = 0.2
   const MAX_ZOOM = 4
-  const ZOOM_STEP = 0.25
+  const ZOOM_STEP = 0.1
+  // Allow a bit of pan slack even when zoomed out to avoid UI overlap/cutoff
+  const PAN_SLOP_X = 16
+  const PAN_SLOP_Y = 80
 
   const [isFullscreen, setIsFullscreen] = useState(false)
   // Zoom/pan state for fullscreen on mobile
@@ -84,6 +87,8 @@ function PhotoDetail() {
   /**
    * Clamp pan offset so the scaled image doesn't drift too far off-screen.
    * Computes contain-fit size, then bounds pan based on scale.
+   * Adds small slack when the image is smaller than the container (zoom <= 1)
+   * so users can nudge the image away from UI overlays.
    */
   const clampOffset = useCallback((nx: number, ny: number, sc: number) => {
     const cont = containerRef.current
@@ -99,8 +104,13 @@ function PhotoDetail() {
     const dh = ih * fit
     const sw = dw * sc
     const sh = dh * sc
-    const maxX = Math.max(0, (sw - dw) / 2)
-    const maxY = Math.max(0, (sh - dh) / 2)
+    // Base max pan from scale; add slack when scaled image is not larger than fit size
+    const baseMaxX = Math.max(0, (sw - dw) / 2)
+    const baseMaxY = Math.max(0, (sh - dh) / 2)
+    const extraX = sw <= dw ? PAN_SLOP_X : 0
+    const extraY = sh <= dh ? PAN_SLOP_Y : 0
+    const maxX = baseMaxX + extraX
+    const maxY = baseMaxY + extraY
     return {
       x: Math.max(-maxX, Math.min(nx, maxX)),
       y: Math.max(-maxY, Math.min(ny, maxY)),
@@ -139,7 +149,8 @@ function PhotoDetail() {
       const { x, y } = clampOffset(base.x + dx, base.y + dy, nextScale)
       setZoom(nextScale)
       setOffset({ x, y })
-    } else if (e.touches.length === 1 && zoom > 1) {
+    } else if (e.touches.length === 1) {
+      // Allow single-finger pan at any zoom level (use clamp slack when zoom <= 1)
       e.preventDefault()
       const t = e.touches[0]
       const last = pinchRef.current.lastTouch
