@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { FiDownload, FiArrowLeft, FiUser, FiMaximize, FiExternalLink, FiAlertCircle } from 'react-icons/fi'
+import { FiDownload, FiArrowLeft, FiUser, FiMaximize, FiExternalLink, FiAlertCircle, FiX } from 'react-icons/fi'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import type { Photo } from '../types/photos'
 import { getPhotoInfo } from '../services/picsum'
@@ -11,6 +11,7 @@ function PhotoDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [imgLoaded, setImgLoaded] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   const fetchPhotoDetail = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -42,6 +43,20 @@ function PhotoDetail() {
     }
     return () => { document.title = 'Picsum Photo Gallery' }
   }, [photo])
+
+  useEffect(() => {
+    if (!isFullscreen) return
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsFullscreen(false)
+    }
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKey)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKey)
+    }
+  }, [isFullscreen])
 
   if (loading) {
     return (
@@ -97,7 +112,20 @@ function PhotoDetail() {
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-2xl ring-1 ring-gray-200 overflow-hidden">
           {/* Full Size Image with Skeleton */}
-          <div className="w-full bg-gray-900 flex items-center justify-center">
+          <div
+            className="relative group w-full bg-gray-900 flex items-center justify-center cursor-zoom-in"
+            role="button"
+            tabIndex={0}
+            aria-label="View full-size image"
+            title="Click to view full-size"
+            onClick={() => setIsFullscreen(true)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setIsFullscreen(true)
+              }
+            }}
+          >
             {!imgLoaded && (
               <div className="w-full h-[60vh] sm:h-[70vh] animate-pulse bg-gray-800" />
             )}
@@ -113,6 +141,11 @@ function PhotoDetail() {
               onLoad={() => setImgLoaded(true)}
               className={`w-full max-h-[70vh] object-contain transition-opacity duration-700 ease-out ${imgLoaded ? 'opacity-100' : 'opacity-0'} `}
             />
+            {/* Click hint */}
+            <div className="pointer-events-none absolute bottom-3 right-3 rounded-md bg-white/10 text-white backdrop-blur px-2.5 py-1.5 text-xs font-medium opacity-80 group-hover:opacity-100 transition-opacity flex items-center gap-1.5">
+              <FiMaximize className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Click to enlarge</span>
+            </div>
           </div>
 
           {/* Info */}
@@ -184,6 +217,38 @@ function PhotoDetail() {
           </div>
         </div>
       </div>
+
+      {/* Fullscreen Overlay */}
+      {isFullscreen && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Full-size image viewer"
+          title="Click anywhere or press Esc to close"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsFullscreen(false)
+          }}
+        >
+          <button
+            aria-label="Close full-size image"
+            className="absolute top-4 right-4 inline-flex items-center justify-center rounded-md bg-white/10 hover:bg-white/20 text-white p-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white"
+            onClick={() => setIsFullscreen(false)}
+          >
+            <FiX className="w-5 h-5" />
+          </button>
+          <img
+            src={photo.download_url}
+            alt={`Full-size photo by ${photo.author}`}
+            className="max-w-none max-h-[90vh] max-w-[95vw] shadow-2xl cursor-zoom-out"
+            onClick={() => setIsFullscreen(false)}
+          />
+          {/* Close hint */}
+          <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm">
+            Click anywhere or press Esc to close
+          </div>
+        </div>
+      )}
     </div>
   )
 }
