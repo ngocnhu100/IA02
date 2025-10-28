@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom'
 import { FiAlertCircle } from 'react-icons/fi'
 
+/**
+ * Generic 404 page with a link back to the gallery.
+ */
 export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">

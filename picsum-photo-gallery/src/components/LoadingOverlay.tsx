@@ -2,12 +2,16 @@ import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import type { PropsWithChildren } from 'react'
 
 type Size = 'sm' | 'md' | 'lg'
+// Map size prop to spinner dimensions
 const sizeClass: Record<Size, string> = {
   sm: 'h-8 w-8',
   md: 'h-12 w-12',
   lg: 'h-16 w-16',
 }
 
+/**
+ * Full-screen loading overlay. Uses aria-live and aria-busy for screen readers.
+ */
 export default function LoadingOverlay({
   children,
   size = 'lg',

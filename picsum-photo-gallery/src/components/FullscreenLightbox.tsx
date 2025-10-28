@@ -1,6 +1,9 @@
 import { useEffect } from 'react'
 import { FiX } from 'react-icons/fi'
 
+/**
+ * Simple fullscreen viewer. Locks body scroll and closes on overlay click or Escape.
+ */
 export default function FullscreenLightbox({
   src,
   alt,

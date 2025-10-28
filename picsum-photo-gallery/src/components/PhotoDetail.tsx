@@ -6,6 +6,7 @@ import { getPhotoInfo } from '../services/picsum'
 import LoadingOverlay from './LoadingOverlay'
 import ErrorState from './ErrorState'
 
+// Detail page: fetch photo and provide fullscreen zoom/pan viewer
 function PhotoDetail() {
   const { id } = useParams<{ id: string }>()
   const [photo, setPhoto] = useState<Photo | null>(null)
@@ -24,6 +25,7 @@ function PhotoDetail() {
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
+  // Store pinch gesture baseline and last touch info between events
   const pinchRef = useRef<{
     startScale: number
     startOffset: { x: number; y: number }
@@ -33,6 +35,7 @@ function PhotoDetail() {
     lastTapTs?: number
   }>({ startScale: 1, startOffset: { x: 0, y: 0 }, startDist: 0, startCenter: { x: 0, y: 0 } })
 
+  // Fetch photo details; supports AbortSignal to cancel on navigation
   const fetchPhotoDetail = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true)
@@ -42,7 +45,7 @@ function PhotoDetail() {
       const data = await getPhotoInfo(id, signal)
       setPhoto(data)
     } catch (err: unknown) {
-      // AbortController throws a DOMException with name 'AbortError' when aborted
+      // Ignore AbortError when request is cancelled
       if (err instanceof DOMException && err.name === 'AbortError') return
       setError(err instanceof Error ? err.message : 'Failed to load photo')
     } finally {
@@ -59,6 +62,7 @@ function PhotoDetail() {
   }, [id, fetchPhotoDetail])
 
   useEffect(() => {
+    // Set contextual document title; restore on unmount
     if (photo) {
       document.title = `Photo by ${photo.author} – Picsum`
     }
@@ -66,6 +70,7 @@ function PhotoDetail() {
   }, [photo])
 
   useEffect(() => {
+    // Lock scroll and close on Escape while in fullscreen
     if (!isFullscreen) return
     const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsFullscreen(false) }
     const prev = document.body.style.overflow
@@ -74,7 +79,10 @@ function PhotoDetail() {
     return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', handleKey) }
   }, [isFullscreen])
 
-  // Helper to clamp offset so image doesn't drift off-screen too far
+  /**
+   * Clamp pan offset so the scaled image doesn't drift too far off-screen.
+   * Computes contain-fit size, then bounds pan based on scale.
+   */
   const clampOffset = useCallback((nx: number, ny: number, sc: number) => {
     const cont = containerRef.current
     const img = imgRef.current
@@ -97,6 +105,7 @@ function PhotoDetail() {
     }
   }, [])
 
+  // Touch gestures: pinch to zoom, drag to pan, double-tap to toggle zoom
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       const [a, b] = [e.touches[0], e.touches[1]]

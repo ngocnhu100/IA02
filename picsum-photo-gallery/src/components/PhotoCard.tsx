@@ -3,6 +3,10 @@ import type { Photo } from '../types/photos'
 
 type ViewMode = 'grid' | 'list'
 
+/**
+ * Reusable preview card for a photo.
+ * Uses responsive images and switches layout between grid/list modes.
+ */
 export default function PhotoCard({ photo, viewMode }: { photo: Photo; viewMode: ViewMode }) {
   return (
     <Link
@@ -14,6 +18,7 @@ export default function PhotoCard({ photo, viewMode }: { photo: Photo; viewMode:
       }
     >
       <img
+        // Provide 2 sizes; browser picks best via sizes/srcSet
         src={`https://picsum.photos/id/${photo.id}/300/200`}
         srcSet={`
           https://picsum.photos/id/${photo.id}/300/200 300w,

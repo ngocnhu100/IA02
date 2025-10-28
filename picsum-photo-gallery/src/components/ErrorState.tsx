@@ -1,6 +1,9 @@
 import { FiAlertCircle } from 'react-icons/fi'
 import type { PropsWithChildren } from 'react'
 
+/**
+ * Full-screen error message wrapper. Uses role="alert" for AT.
+ */
 export default function ErrorState({
   message,
   title = 'Oops! Something went wrong',

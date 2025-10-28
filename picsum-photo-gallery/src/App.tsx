@@ -12,18 +12,22 @@ import ErrorState from './components/ErrorState'
 type ViewMode = 'grid' | 'list'
 
 function App() {
+  // Gallery items and UI state
   const [photos, setPhotos] = useState<Photo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Persist view mode via URL (?view=) and localStorage
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const param = new URLSearchParams(window.location.search).get('view')
     const saved = localStorage.getItem('viewMode') as ViewMode | null
     return (param === 'list' || param === 'grid') ? (param as ViewMode) : (saved ?? 'grid')
   })
+  // Infinite scroll pagination and control flags
   const [page, setPage] = useState(1)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const observerTarget = useRef<HTMLDivElement>(null)
+  // Track retry attempts per page to avoid infinite loops
   const retryCount = useRef<Map<number, number>>(new Map())
   const maxRetries = 3
   const [, setSearchParams] = useSearchParams()
@@ -33,6 +37,7 @@ function App() {
   }, [])
 
   useEffect(() => {
+    // Sync viewMode to localStorage and URL (omit ?view=grid to keep URL clean)
     localStorage.setItem('viewMode', viewMode)
     setSearchParams(prev => {
       const next = new URLSearchParams(prev)
@@ -42,6 +47,7 @@ function App() {
     }, { replace: true })
   }, [viewMode, setSearchParams])
 
+  // Fetch a page with linear backoff retry for non-initial pages
   const fetchPhotos = useCallback(async (pageNum: number, attempt = 1) => {
     try {
       if (pageNum === 1) {
@@ -51,6 +57,7 @@ function App() {
       }
       setError(null)
 
+      // Backoff between retries (progressive delay)
       if (attempt > 1) {
         await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
       }
@@ -58,7 +65,7 @@ function App() {
       const data = await getPhotosPage(pageNum, 36)
 
       if (data.length === 0) {
-        setHasMore(false)
+        setHasMore(false) // No more pages
       } else {
         setPhotos(prev => pageNum === 1 ? data : [...prev, ...data])
         retryCount.current.delete(pageNum)
@@ -72,10 +79,12 @@ function App() {
       const currentRetries = retryCount.current.get(pageNum) || 0
 
       if (pageNum === 1) {
+        // Surface errors for the initial load
         setError(error instanceof Error ? error.message : 'Failed to fetch photos')
         setLoading(false)
         setLoadingMore(false)
       } else {
+        // Retry a few times then skip to next page to keep UX flowing
         if (currentRetries < maxRetries) {
           retryCount.current.set(pageNum, currentRetries + 1)
           setTimeout(() => {
@@ -91,10 +100,12 @@ function App() {
   }, [])
 
   useEffect(() => {
+    // Initial load
     fetchPhotos(1)
   }, [fetchPhotos])
 
   useEffect(() => {
+    // IntersectionObserver: when sentinel enters viewport, load next page
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !loadingMore && hasMore && !loading) {
@@ -117,7 +128,7 @@ function App() {
     }
   }, [loadingMore, hasMore, loading])
 
-  // Fetch when page changes (do not depend on/loadingMore or gate on it)
+  // Fetch when page increments (do not gate on/loadingMore)
   useEffect(() => {
     if (page > 1) {
       fetchPhotos(page)

@@ -1,6 +1,6 @@
 import type { Photo } from "../types/photos";
 
-const BASE = "https://picsum.photos";
+const BASE = "https://picsum.photos"; // Base URL for Picsum API
 
 /**
  * Fetch with simple retry and linear backoff.
@@ -19,6 +19,7 @@ async function fetchWithRetry(
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const res = await fetch(input, {
+        // Use CORS with default cache; callers can override via init
         mode: "cors",
         cache: "default",
         ...init,
@@ -36,7 +37,8 @@ async function fetchWithRetry(
 }
 
 /**
- * Get a page of photos.
+ * Get a page of photos (paginated).
+ * Returns lightweight list items used by gallery.
  */
 export async function getPhotosPage(
   page: number,
@@ -47,11 +49,11 @@ export async function getPhotosPage(
     `${BASE}/v2/list?page=${page}&limit=${limit}`,
     { signal }
   );
-  return res.json();
+  return res.json(); // List of Photo metadata
 }
 
 /**
- * Get details for a single photo.
+ * Get details for a single photo (full metadata).
  */
 export async function getPhotoInfo(
   id: string,
