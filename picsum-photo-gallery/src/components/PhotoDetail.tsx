@@ -221,7 +221,7 @@ function PhotoDetail() {
       {/* Fullscreen Overlay */}
       {isFullscreen && (
         <div
-          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+          className="fixed inset-0 z-60 bg-black/90 flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
           aria-label="Full-size image viewer"
@@ -240,7 +240,7 @@ function PhotoDetail() {
           <img
             src={photo.download_url}
             alt={`Full-size photo by ${photo.author}`}
-            className="max-w-none max-h-[90vh] max-w-[95vw] shadow-2xl cursor-zoom-out"
+            className="max-w-none max-h-[90vh] shadow-2xl cursor-zoom-out"
             onClick={() => setIsFullscreen(false)}
           />
           {/* Close hint */}

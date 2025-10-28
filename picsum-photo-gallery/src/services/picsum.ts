@@ -29,7 +29,7 @@ async function fetchWithRetry(
 
 export async function getPhotosPage(
   page: number,
-  limit = 30,
+  limit = 36,
   signal?: AbortSignal
 ): Promise<Photo[]> {
   const res = await fetchWithRetry(

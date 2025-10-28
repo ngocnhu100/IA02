@@ -10,9 +10,9 @@ export default function NotFound() {
         <p className="text-gray-600 mb-6">The page you are looking for doesn't exist.</p>
         <Link
           to="/photos"
-          className="inline-block px-6 py-3 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors no-underline"
+          className="inline-block px-6 py-3 bg-blue-700 rounded-lg hover:bg-blue-800 transition-colors no-underline"
         >
-          Back to Gallery
+          <span className="text-white">Back to Gallery</span>
         </Link>
       </div>
     </div>

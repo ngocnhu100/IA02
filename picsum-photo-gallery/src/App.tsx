@@ -53,7 +53,7 @@ function App() {
         await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
       }
 
-      const data = await getPhotosPage(pageNum, 30)
+      const data = await getPhotosPage(pageNum, 36)
 
       if (data.length === 0) {
         setHasMore(false)
