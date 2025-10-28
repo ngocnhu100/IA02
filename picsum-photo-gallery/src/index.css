@@ -1,3 +1,6 @@
+@import "tailwindcss";
+/* Ensure Tailwind utilities are available globally across all routes */
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -24,8 +27,9 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  /* Removed global centering to prevent layout conflicts with Tailwind containers */
+  /* display: flex;
+  place-items: center; */
   min-width: 320px;
   min-height: 100vh;
 }

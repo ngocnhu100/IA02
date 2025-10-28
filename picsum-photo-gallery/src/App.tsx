@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import './App.css'
-import { FiGrid, FiList, FiAlertCircle } from 'react-icons/fi'
+import { FiGrid, FiList } from 'react-icons/fi'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import type { Photo } from './types/photos'
 import PhotoCard from './components/PhotoCard'
 import { getPhotosPage } from './services/picsum'
+import LoadingOverlay from './components/LoadingOverlay'
+import ErrorState from './components/ErrorState'
 
 type ViewMode = 'grid' | 'list'
 
@@ -124,45 +126,32 @@ function App() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-100">
-        <div className="flex flex-col items-center gap-6 p-8" role="status" aria-live="polite" aria-busy="true">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            Picsum Photo Gallery
-          </h1>
-          <AiOutlineLoading3Quarters className="animate-spin h-16 w-16 text-blue-600" aria-hidden="true" />
-          <div className="text-2xl font-semibold text-gray-700">Loading photos...</div>
-          <div className="text-sm text-gray-500">Please wait while we fetch amazing images for you</div>
-        </div>
-      </div>
+      <LoadingOverlay>
+        <h1 className="text-4xl font-bold text-gray-800 mb-2">
+          Picsum Photo Gallery
+        </h1>
+        <div className="text-2xl font-semibold text-gray-700">Loading photos...</div>
+        <div className="text-sm text-gray-500">Please wait while we fetch amazing images for you</div>
+      </LoadingOverlay>
     )
   }
 
   if (error) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-100" role="alert" aria-live="assertive">
-        <div className="flex flex-col items-center gap-6 p-8 text-center">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            Picsum Photo Gallery
-          </h1>
-          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
-            <FiAlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" aria-hidden="true" />
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">Oops! Something went wrong</h2>
-            <p className="text-red-600 mb-6">{error}</p>
-            <button
-              onClick={() => {
-                retryCount.current.clear()
-                setPage(1)
-                setPhotos([])
-                setHasMore(true)
-                fetchPhotos(1)
-              }}
-              className="px-6 py-3 bg-black text-white rounded-lg hover:bg-blue-600 transition-colors font-medium shadow-md hover:shadow-lg"
-            >
-              Try Again
-            </button>
-          </div>
-        </div>
-      </div>
+      <ErrorState message={error}>
+        <button
+          onClick={() => {
+            retryCount.current.clear()
+            setPage(1)
+            setPhotos([])
+            setHasMore(true)
+            fetchPhotos(1)
+          }}
+          className="px-6 py-3 bg-black text-white rounded-lg hover:bg-blue-600 transition-colors font-medium shadow-md hover:shadow-lg"
+        >
+          Try Again
+        </button>
+      </ErrorState>
     )
   }
 

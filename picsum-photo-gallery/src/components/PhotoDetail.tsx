@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { FiDownload, FiArrowLeft, FiUser, FiMaximize, FiExternalLink, FiAlertCircle, FiX } from 'react-icons/fi'
-import { AiOutlineLoading3Quarters } from 'react-icons/ai'
+import { FiDownload, FiArrowLeft, FiUser, FiMaximize, FiExternalLink } from 'react-icons/fi'
 import type { Photo } from '../types/photos'
 import { getPhotoInfo } from '../services/picsum'
+import LoadingOverlay from './LoadingOverlay'
+import ErrorState from './ErrorState'
+import FullscreenLightbox from './FullscreenLightbox'
 
 function PhotoDetail() {
   const { id } = useParams<{ id: string }>()
@@ -32,6 +34,7 @@ function PhotoDetail() {
 
   useEffect(() => {
     if (!id) return
+    // Abort in-flight request when navigating away
     const controller = new AbortController()
     fetchPhotoDetail(controller.signal)
     return () => controller.abort()
@@ -44,56 +47,32 @@ function PhotoDetail() {
     return () => { document.title = 'Picsum Photo Gallery' }
   }, [photo])
 
-  useEffect(() => {
-    if (!isFullscreen) return
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsFullscreen(false)
-    }
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    window.addEventListener('keydown', handleKey)
-    return () => {
-      document.body.style.overflow = previousOverflow
-      window.removeEventListener('keydown', handleKey)
-    }
-  }, [isFullscreen])
-
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-100">
-        <div className="flex flex-col items-center gap-4" role="status" aria-live="polite" aria-busy="true">
-          <AiOutlineLoading3Quarters className="animate-spin h-12 w-12 text-blue-600" aria-hidden="true" />
-          <p className="text-gray-700 text-lg">Loading photo details...</p>
-        </div>
-      </div>
+      <LoadingOverlay>
+        <p className="text-gray-700 text-lg">Loading photo details...</p>
+      </LoadingOverlay>
     )
   }
 
   if (error || !photo) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-100" role="alert" aria-live="assertive">
-        <div className="text-center max-w-md p-8">
-          <div className="bg-white rounded-lg shadow-lg p-8">
-            <FiAlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" aria-hidden="true" />
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">Oops! Something went wrong</h2>
-            <p className="text-red-600 mb-6">{error || 'Photo not found'}</p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <button
-                onClick={() => { void fetchPhotoDetail(); }}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-700"
-              >
-                Try Again
-              </button>
-              <Link
-                to="/photos"
-                className="px-6 py-3 bg-white text-gray-900 visited:text-gray-900 active:text-gray-900 no-underline border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-600"
-              >
-                <span>Back to Gallery</span>
-              </Link>
-            </div>
-          </div>
+      <ErrorState message={error || 'Photo not found'}>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <button
+            onClick={() => { void fetchPhotoDetail(); }}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-700"
+          >
+            Try Again
+          </button>
+          <Link
+            to="/photos"
+            className="px-6 py-3 bg-white text-gray-900 visited:text-gray-900 active:text-gray-900 no-underline border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-600"
+          >
+            <span>Back to Gallery</span>
+          </Link>
         </div>
-      </div>
+      </ErrorState>
     )
   }
 
@@ -138,6 +117,7 @@ function PhotoDetail() {
               `}
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 1200px"
               alt={`Photo by ${photo.author}`}
+              decoding="async"
               onLoad={() => setImgLoaded(true)}
               className={`w-full max-h-[70vh] object-contain transition-opacity duration-700 ease-out ${imgLoaded ? 'opacity-100' : 'opacity-0'} `}
             />
@@ -220,34 +200,11 @@ function PhotoDetail() {
 
       {/* Fullscreen Overlay */}
       {isFullscreen && (
-        <div
-          className="fixed inset-0 z-60 bg-black/90 flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Full-size image viewer"
-          title="Click anywhere or press Esc to close"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setIsFullscreen(false)
-          }}
-        >
-          <button
-            aria-label="Close full-size image"
-            className="absolute top-4 right-4 inline-flex items-center justify-center rounded-md bg-white/10 hover:bg-white/20 text-white p-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white"
-            onClick={() => setIsFullscreen(false)}
-          >
-            <FiX className="w-5 h-5" />
-          </button>
-          <img
-            src={photo.download_url}
-            alt={`Full-size photo by ${photo.author}`}
-            className="max-w-none max-h-[90vh] shadow-2xl cursor-zoom-out"
-            onClick={() => setIsFullscreen(false)}
-          />
-          {/* Close hint */}
-          <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm">
-            Click anywhere or press Esc to close
-          </div>
-        </div>
+        <FullscreenLightbox
+          src={photo.download_url}
+          alt={`Full-size photo by ${photo.author}`}
+          onClose={() => setIsFullscreen(false)}
+        />
       )}
     </div>
   )

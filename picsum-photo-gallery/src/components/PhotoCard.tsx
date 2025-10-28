@@ -21,6 +21,7 @@ export default function PhotoCard({ photo, viewMode }: { photo: Photo; viewMode:
         `}
         sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
         alt={`Photo by ${photo.author}`}
+        decoding="async"
         className={
           viewMode === 'grid'
             ? 'w-full h-48 object-cover'

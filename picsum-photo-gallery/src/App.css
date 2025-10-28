@@ -1,9 +1,7 @@
-@import "tailwindcss";
+/* Let Tailwind utilities (mx-auto, max-w-*, p-*) control layout instead of a global #root box */
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  /* removed: max-width, margin, padding */
+  text-align: initial;
 }
 
 .logo {

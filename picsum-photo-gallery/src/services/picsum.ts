@@ -2,6 +2,13 @@ import type { Photo } from "../types/photos";
 
 const BASE = "https://picsum.photos";
 
+/**
+ * Fetch with simple retry and linear backoff.
+ * @param input Request URL or Request
+ * @param init Fetch init
+ * @param retries Number of retry attempts
+ * @param backoffMs Base backoff in ms (multiplied by attempt index)
+ */
 async function fetchWithRetry(
   input: RequestInfo | URL,
   init: RequestInit = {},
@@ -21,12 +28,16 @@ async function fetchWithRetry(
     } catch (e) {
       lastErr = e;
       if (attempt === retries) break;
+      // Linear backoff: 1x, 2x, ... backoffMs
       await new Promise((r) => setTimeout(r, backoffMs * (attempt + 1)));
     }
   }
   throw lastErr instanceof Error ? lastErr : new Error("Network error");
 }
 
+/**
+ * Get a page of photos.
+ */
 export async function getPhotosPage(
   page: number,
   limit = 36,
@@ -39,6 +50,9 @@ export async function getPhotosPage(
   return res.json();
 }
 
+/**
+ * Get details for a single photo.
+ */
 export async function getPhotoInfo(
   id: string,
   signal?: AbortSignal
