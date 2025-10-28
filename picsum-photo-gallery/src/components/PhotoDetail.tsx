@@ -15,8 +15,8 @@ function PhotoDetail() {
   const [imgLoaded, setImgLoaded] = useState(false)
 
   // Zoom bounds and step
-  const MIN_ZOOM = 0.5
-  const MAX_ZOOM = 4
+  const MIN_ZOOM = 0.25
+  const MAX_ZOOM = 2
   const ZOOM_STEP = 0.25
 
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -105,7 +105,7 @@ function PhotoDetail() {
     }
   }, [])
 
-  // Touch gestures: pinch to zoom, drag to pan, double-tap to toggle zoom
+  // Touch gestures: pinch to zoom, double-tap to toggle zoom
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       const [a, b] = [e.touches[0], e.touches[1]]
@@ -323,7 +323,7 @@ function PhotoDetail() {
           role="dialog"
           aria-modal="true"
           aria-label="Full-size image viewer"
-          title="Pinch to zoom, drag to pan. Double-tap to toggle zoom. Click anywhere or press Esc to close"
+          title="Pinch to zoom. Double-tap to toggle zoom. Click anywhere or press Esc to close"
           onClick={(e) => { if (e.target === e.currentTarget) setIsFullscreen(false) }}
         >
           <button
@@ -394,7 +394,7 @@ function PhotoDetail() {
 
           {/* Close hint */}
           <div className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 text-white/80 text-xs sm:text-sm">
-            Pinch to zoom, drag to pan. Tap outside or press Esc to close
+            Pinch to zoom. Tap outside or press Esc to close
           </div>
         </div>
       )}
