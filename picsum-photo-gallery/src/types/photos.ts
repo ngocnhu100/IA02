@@ -10,7 +10,7 @@ export interface Photo {
   width: number;
   /** Original image height in pixels */
   height: number;
-  /** Page URL on Picsum */
+  /** Page URL on Unsplash */
   url: string;
   /** Direct download URL for the original image */
   download_url: string;
